@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 320px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #ffffff;
+      }
+
+      .subtitle {
+        font-size: 11px;
+        color: #888;
+        margin-bottom: 16px;
+      }
+
+      .status-box {
+        background: #16213e;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        border: 1px solid #0f3460;
+      }
+
+      .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+
+      .status-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .status-label {
+        font-size: 12px;
+        color: #aaa;
+      }
+
+      .status-value {
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .status-active {
+        color: #53d769;
+      }
+
+      .status-inactive {
+        color: #ff6b6b;
+      }
+
+      .status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        animation: pulse 2s infinite;
+      }
+
+      .dot-active {
+        background: #53d769;
+      }
+
+      .dot-inactive {
+        background: #ff6b6b;
+        animation: none;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .interval-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .interval-row label {
+        font-size: 12px;
+        color: #aaa;
+        white-space: nowrap;
+      }
+
+      .interval-row select {
+        flex: 1;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid #0f3460;
+        background: #16213e;
+        color: #e0e0e0;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      #startBtn {
+        background: #53d769;
+        color: #1a1a2e;
+      }
+
+      #startBtn:hover {
+        background: #45c45a;
+      }
+
+      #stopBtn {
+        background: #ff6b6b;
+        color: #fff;
+      }
+
+      #stopBtn:hover {
+        background: #e55a5a;
+      }
+
+      #checkNowBtn {
+        background: #0f3460;
+        color: #e0e0e0;
+      }
+
+      #checkNowBtn:hover {
+        background: #1a4a80;
+      }
+
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .log-area {
+        background: #0d1117;
+        border-radius: 8px;
+        padding: 8px;
+        max-height: 120px;
+        overflow-y: auto;
+        font-family: "SF Mono", "Fira Code", monospace;
+        font-size: 10px;
+        color: #8b949e;
+        line-height: 1.5;
+        border: 1px solid #21262d;
+      }
+
+      .log-entry {
+        padding: 1px 0;
+      }
+
+      .log-entry.success {
+        color: #53d769;
+      }
+
+      .log-entry.warn {
+        color: #f0ad4e;
+      }
+
+      .log-entry.error {
+        color: #ff6b6b;
+      }
+
+      .section-title {
+        font-size: 11px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Task Auto-Claimer</h1>
+    <p class="subtitle">Monitors &amp; claims Feather tasks automatically</p>
+
+    <div class="status-box">
+      <div class="status-row">
+        <span class="status-label">Status</span>
+        <span class="status-value" id="statusText">
+          <span class="status-dot dot-inactive" id="statusDot"></span>
+          <span id="statusLabel" class="status-inactive">Inactive</span>
+        </span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Tasks claimed</span>
+        <span class="status-value" id="claimedCount">0</span>
+      </div>
+    </div>
+
+    <div class="interval-row">
+      <label for="intervalSelect">Check every</label>
+      <select id="intervalSelect">
+        <option value="5000">5 seconds</option>
+        <option value="10000" selected>10 seconds</option>
+        <option value="15000">15 seconds</option>
+        <option value="30000">30 seconds</option>
+        <option value="60000">1 minute</option>
+      </select>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn">Start Monitoring</button>
+      <button id="stopBtn" disabled>Stop Monitoring</button>
+      <button id="checkNowBtn">Check Now</button>
+    </div>
+
+    <div class="section-title">Activity Log</div>
+    <div class="log-area" id="logArea">
+      <div class="log-entry">Ready. Open the dashboard and click Start.</div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
