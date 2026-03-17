@@ -6,7 +6,10 @@
   "permissions": [
     "storage",
     "notifications",
-    "alarms"
+    "alarms",
+    "tabs",
+    "activeTab",
+    "scripting"
   ],
   "host_permissions": [
     "https://feather.openai.com/*"

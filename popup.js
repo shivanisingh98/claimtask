@@ -51,20 +51,62 @@ function setUIState(monitoring) {
 }
 
 function sendToContentScript(msg, callback) {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0] && tabs[0].url && tabs[0].url.includes(DASHBOARD_PATTERN)) {
-      chrome.tabs.sendMessage(tabs[0].id, msg, (response) => {
-        if (chrome.runtime.lastError) {
-          addLog("Cannot reach dashboard tab. Ensure the page is loaded.", "error");
-          callback && callback(null);
-          return;
-        }
-        callback && callback(response);
-      });
-    } else {
+  // First try the active tab, then search all tabs for the dashboard
+  chrome.tabs.query({}, (allTabs) => {
+    const dashboardTab = allTabs.find(
+      (t) => t.url && t.url.includes(DASHBOARD_PATTERN)
+    );
+
+    if (!dashboardTab) {
       addLog("Please open the Feather dashboard first.", "warn");
       callback && callback(null);
+      return;
     }
+
+    // Try sending the message
+    chrome.tabs.sendMessage(dashboardTab.id, msg, (response) => {
+      if (chrome.runtime.lastError) {
+        // Content script not injected yet — inject it, then retry
+        addLog("Injecting content script into dashboard tab...", "warn");
+        chrome.scripting.executeScript(
+          {
+            target: { tabId: dashboardTab.id },
+            files: ["content.js"],
+          },
+          () => {
+            if (chrome.runtime.lastError) {
+              addLog(
+                "Failed to inject script: " + chrome.runtime.lastError.message,
+                "error"
+              );
+              callback && callback(null);
+              return;
+            }
+            // Also inject the CSS
+            chrome.scripting.insertCSS({
+              target: { tabId: dashboardTab.id },
+              files: ["content.css"],
+            });
+            // Retry the message after a short delay
+            setTimeout(() => {
+              chrome.tabs.sendMessage(dashboardTab.id, msg, (retryResponse) => {
+                if (chrome.runtime.lastError) {
+                  addLog(
+                    "Still cannot reach tab: " + chrome.runtime.lastError.message,
+                    "error"
+                  );
+                  callback && callback(null);
+                  return;
+                }
+                callback && callback(retryResponse);
+              });
+            }, 1000);
+          }
+        );
+        return;
+      }
+      callback && callback(response);
+    });
   });
 }
 
